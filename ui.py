@@ -1,10 +1,12 @@
 # ui.py
 
 import tkinter as tk
+from tkinter.filedialog import askopenfilename
 import customtkinter as ctk
 import threading
 import time
 import queue
+from PIL import Image, ImageTk  # for thumbnail previews
 
 from settings_manager import load_settings, save_settings
 from database_manager import (
@@ -14,7 +16,12 @@ from database_manager import (
     remove_selected_plate
 )
 import map_display
-from detection import detection_queue, running
+from detection import (
+    detection_queue, running,
+    front_debug_mode, back_debug_mode,
+    front_debug_image, back_debug_image
+)
+import detection
 
 def show_database_screen(camera_frame):
     # Clear parent frame
@@ -157,6 +164,166 @@ def show_info_screen(camera_frame):
         font=("Arial", 16), text_color="white")
     authors_label.pack(pady=10)
 
+def show_debug_screen(camera_frame):
+    """
+    A 'Debug' screen showing:
+      1. An image file selector + tiny preview of the selected file.
+      2. Live mini-previews of front/back camera feeds (or their debug image).
+      3. Override/Clear buttons for each camera.
+    """
+    for widget in camera_frame.winfo_children():
+        widget.pack_forget()
+
+    title_label = ctk.CTkLabel(camera_frame, text="Debug / Mock Camera Feed",
+                               font=("Arial", 20), text_color="white")
+    title_label.pack(pady=10)
+
+    debug_main_frame = ctk.CTkFrame(camera_frame, corner_radius=10, fg_color="#2e2e2e")
+    debug_main_frame.pack(pady=10, fill="both", expand=True)
+
+    # ----------------------------------------------------------------------
+    # 1) Selected Image Preview
+    # ----------------------------------------------------------------------
+    file_path_var = tk.StringVar()
+    selected_img_label = None  # We'll create a label to show a thumbnail
+    selected_img_tk = None     # We'll store a PhotoImage reference here
+
+    def select_image_file():
+        path = askopenfilename(filetypes=[
+            ("Image Files", "*.png *.jpg *.jpeg *.bmp *.tiff *.tif")
+        ])
+        if not path:
+            return
+        file_path_var.set(path)
+        # Create a thumbnail preview
+        pil_img = Image.open(path)
+        pil_img.thumbnail((200, 200))  # shrink to 200x200 max
+        nonlocal selected_img_tk
+        selected_img_tk = ImageTk.PhotoImage(pil_img)
+        selected_img_label.configure(image=selected_img_tk)
+
+    top_frame = ctk.CTkFrame(debug_main_frame, fg_color="#2e2e2e")
+    top_frame.pack(pady=10)
+
+    select_btn = ctk.CTkButton(top_frame, text="Wybierz Plik Obrazu", command=select_image_file)
+    select_btn.grid(row=0, column=0, padx=5, pady=5)
+
+    selected_img_label = ctk.CTkLabel(top_frame, text="(No image selected)")
+    selected_img_label.grid(row=0, column=1, padx=5, pady=5)
+
+    # ----------------------------------------------------------------------
+    # 2) Camera Previews + Override/Clear
+    # ----------------------------------------------------------------------
+    # We'll create two subframes: one for front camera, one for back camera.
+    cameras_frame = ctk.CTkFrame(debug_main_frame, fg_color="#2e2e2e")
+    cameras_frame.pack(pady=10, fill="both", expand=True)
+
+    front_frame = ctk.CTkFrame(cameras_frame, fg_color="#2e2e2e")
+    front_frame.pack(side="left", expand=True, fill="both", padx=10, pady=10)
+
+    back_frame = ctk.CTkFrame(cameras_frame, fg_color="#2e2e2e")
+    back_frame.pack(side="left", expand=True, fill="both", padx=10, pady=10)
+
+    # We'll have a label to show the "front" mini-preview
+    front_preview_label = ctk.CTkLabel(front_frame, text="Front Preview")
+    front_preview_label.pack(pady=5)
+    front_preview_tk = None
+
+    # Buttons under front preview
+    def front_override():
+        path = file_path_var.get()
+        if not path:
+            return
+        # Load the chosen image in detection.front_debug_image
+        import cv2
+        img = cv2.imread(path)
+        if img is not None:
+            detection.front_debug_mode = True
+            detection.front_debug_image = img
+
+    def front_clear():
+        detection.front_debug_mode = False
+        detection.front_debug_image = None
+
+    front_btn_frame = ctk.CTkFrame(front_frame, fg_color="#2e2e2e")
+    front_btn_frame.pack(pady=5)
+    front_override_btn = ctk.CTkButton(front_btn_frame, text="Override", command=front_override)
+    front_override_btn.grid(row=0, column=0, padx=5)
+    front_clear_btn = ctk.CTkButton(front_btn_frame, text="Clear", command=front_clear)
+    front_clear_btn.grid(row=0, column=1, padx=5)
+
+    # Similar for back camera
+    back_preview_label = ctk.CTkLabel(back_frame, text="Back Preview")
+    back_preview_label.pack(pady=5)
+    back_preview_tk = None
+
+    def back_override():
+        path = file_path_var.get()
+        if not path:
+            return
+        import cv2
+        img = cv2.imread(path)
+        if img is not None:
+            detection.back_debug_mode = True
+            detection.back_debug_image = img
+
+    def back_clear():
+        detection.back_debug_mode = False
+        detection.back_debug_image = None
+
+    back_btn_frame = ctk.CTkFrame(back_frame, fg_color="#2e2e2e")
+    back_btn_frame.pack(pady=5)
+    back_override_btn = ctk.CTkButton(back_btn_frame, text="Override", command=back_override)
+    back_override_btn.grid(row=0, column=0, padx=5)
+    back_clear_btn = ctk.CTkButton(back_btn_frame, text="Clear", command=back_clear)
+    back_clear_btn.grid(row=0, column=1, padx=5)
+
+    # ----------------------------------------------------------------------
+    # 3) Periodic Update of Mini-Previews
+    # ----------------------------------------------------------------------
+    def cv2_to_tk(frame_bgr, max_size=(160, 90)):
+        """
+        Convert a BGR NumPy frame (OpenCV) to a small TKinter image.
+        """
+        if frame_bgr is None:
+            return None
+        # Convert BGR to RGB
+        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(frame_rgb)
+        pil_img.thumbnail(max_size)
+        return ImageTk.PhotoImage(pil_img)
+
+    def update_camera_previews():
+        # front
+        if detection.front_debug_mode and detection.front_debug_image is not None:
+            # Show the debug image as the mini-preview
+            preview_img = cv2_to_tk(detection.front_debug_image)
+        else:
+            # Show the last real/detected frame
+            preview_img = cv2_to_tk(detection.front_last_frame)
+
+        nonlocal front_preview_tk
+        if preview_img is not None:
+            front_preview_tk = preview_img
+            front_preview_label.configure(image=front_preview_tk, text="")
+
+        # back
+        if detection.back_debug_mode and detection.back_debug_image is not None:
+            preview_img = cv2_to_tk(detection.back_debug_image)
+        else:
+            preview_img = cv2_to_tk(detection.back_last_frame)
+
+        nonlocal back_preview_tk
+        if preview_img is not None:
+            back_preview_tk = preview_img
+            back_preview_label.configure(image=back_preview_tk, text="")
+
+        # Schedule the next update
+        camera_frame.after(200, update_camera_previews)
+
+    # Kick off the preview updater
+    update_camera_previews()
+
 
 def button_click(button_name, camera_frame):
     """
@@ -173,9 +340,10 @@ def button_click(button_name, camera_frame):
 
     elif button_name == "Ustawienia":
         show_settings_screen(camera_frame)
-
     elif button_name == "Informacje":
         show_info_screen(camera_frame)
+    elif button_name == "Debug":
+        show_debug_screen(camera_frame)
 
 
 def play_alert_sound(alert_message, camera_frame):
@@ -279,6 +447,11 @@ def create_app():
     info_btn = ctk.CTkButton(sidebar, text="Informacje",
         command=lambda: button_click("Informacje", camera_frame), width=180, height=50)
     info_btn.grid(row=3, padx=20, pady=20, sticky="ew")
+    
+    debug_btn = ctk.CTkButton(sidebar, text="Debug",
+                              command=lambda: button_click("Debug", camera_frame),
+                              width=180, height=50)
+    debug_btn.grid(row=4, padx=20, pady=20, sticky="ew")
 
     # After the UI is loaded, we start with the "Mapa" view:
     app.after(1000, lambda: button_click("Mapa", camera_frame))
