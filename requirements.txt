@@ -1,0 +1,9 @@
+opencv-python
+numpy
+pyrealsense2
+pytesseract
+easyocr
+paddleocr
+ultralytics
+customtkinter
+Pillow
