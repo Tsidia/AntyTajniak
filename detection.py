@@ -18,6 +18,8 @@ from fuzzy_match import fuzzy_match
 from database_manager import database_entries
 from settings_manager import load_settings
 
+import ocr_manager_async
+
 detection_queue = queue.Queue()
 running = True
 
@@ -49,13 +51,13 @@ BACK_CAMERA_SERIAL = "109622072518"
 
 config_front = rs.config()
 config_front.enable_device(FRONT_CAMERA_SERIAL)
-config_front.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-config_front.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config_front.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
+config_front.enable_stream(rs.stream.depth, 480, 270, rs.format.z16, 15)
 
 config_back = rs.config()
 config_back.enable_device(BACK_CAMERA_SERIAL)
-config_back.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-config_back.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config_back.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
+config_back.enable_stream(rs.stream.depth, 480, 270, rs.format.z16, 15)
 
 
 def run_detection(pipeline, orientation, config):
@@ -95,7 +97,7 @@ def run_detection(pipeline, orientation, config):
             if (orientation == "front" and front_debug_mode and front_debug_image is not None):
                 color_image = front_debug_image.copy()
                 depth_frame = None
-                depth_val = 2.0  # example fixed distance
+                depth_val = 2.0  # fixed distance
             elif (orientation == "back" and back_debug_mode and back_debug_image is not None):
                 color_image = back_debug_image.copy()
                 depth_frame = None
@@ -130,6 +132,8 @@ def run_detection(pipeline, orientation, config):
                     continue
 
                 plate_gray = cv2.cvtColor(plate_region, cv2.COLOR_BGR2GRAY)
+                
+
                 text_tesseract = pytesseract.image_to_string(plate_gray, config=tesseract_config).strip()
                 result_easyocr = easyocr_reader.readtext(plate_gray, detail=0, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
                 text_easyocr = ''.join(result_easyocr).strip()
@@ -148,6 +152,22 @@ def run_detection(pipeline, orientation, config):
                     'EasyOCR': local_normalize_text(text_easyocr),
                     'PaddleOCR': local_normalize_text(text_paddleocr)
                 }
+                
+                # ocr_results = {
+                    # 'Tesseract': '',
+                    # 'EasyOCR': '',
+                    # 'PaddleOCR''',
+                # }
+                
+                # ocr_task_Tessaract = asyncio.create_task(ocr_manager_async.ocr_Tessaract(plate_gray))
+                # ocr_task_EasyOCR = asyncio.create_task(ocr_manager_async.ocr_EasyOCR(plate_gray))
+                # ocr_task_PaddleOCR = asyncio.create_task(ocr_manager_async.ocr_PaddleOCR(plate_gray))
+
+                # results = await asyncio.gather(ocr_task_Tessaract, ocr_task_EasyOCR, ocr_task_PaddleOCR)
+                # ocr_results['Tesseract'] = results[0]
+                # ocr_results['EasyOCR'] = results[1]
+                # ocr_results['PaddleOCR'] = results[2]
+              
 
                 bbox_center_x = (x1_plate + x2_plate) / 2
                 bbox_center_y = (y1_plate + y2_plate) / 2
