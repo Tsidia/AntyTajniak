@@ -6,6 +6,7 @@ import customtkinter as ctk
 import threading
 import time
 import queue
+import cv2
 from PIL import Image, ImageTk  # for thumbnail previews
 
 from settings_manager import load_settings, save_settings
@@ -160,7 +161,7 @@ def show_info_screen(camera_frame):
     version_label.pack(pady=10)
 
     authors_label = ctk.CTkLabel(camera_frame,
-        text="Autorzy:\nJakub Gołębiewski\nKarol Marczak\nMarcel Oczeretko\nKrystian Klisz",
+        text="Autorzy:\nJakub Gołębiewski\nKarol Marczak\nMarcel Oczeretko\nKrystian Klisz\nPaweł Pacanowski\nMichał Sznigir\nJakub Mordyl",
         font=("Arial", 16), text_color="white")
     authors_label.pack(pady=10)
 
