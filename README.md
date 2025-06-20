@@ -14,3 +14,14 @@ Step 4: The detected license plate text is compared to a database of known hidde
 Step 5: If there is a match, the system pinpoints the car's location and places it on a map, relative to the vehicle they're currently driving
 
 Step 6: The system alerts and warns the user
+
+![image](https://github.com/user-attachments/assets/58adfdd0-d086-47b6-aa9d-d80fbb4bf345)
+
+![image](https://github.com/user-attachments/assets/0dc71024-3985-4d1b-9c69-8063779d0e3c)
+
+![image](https://github.com/user-attachments/assets/eb637f96-8d0f-418b-a694-715a215bf7f0)
+
+![image](https://github.com/user-attachments/assets/8cb1386c-7de1-490c-9ccb-6e5dd41410ca)
+
+![image](https://github.com/user-attachments/assets/08971132-4fa2-4495-9ab6-14827e03bcc8)
+
