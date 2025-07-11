@@ -1,5 +1,5 @@
 # AntyTajniak
-Real-Time Vehicle Detection & Alert System
+**Real-Time Vehicle Detection & Alert System**
 
 A multi-camera computer vision application that detects and tracks police vehicles using depth sensing and license plate recognition, providing real-time alerts and spatial visualization for driver awareness.
 
