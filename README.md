@@ -1,19 +1,21 @@
 # AntyTajniak
-AI detection tool for recognizing unmarked police cars on the road in real time
+Real-Time Vehicle Detection & Alert System
+A multi-camera computer vision application that detects and tracks police vehicles using depth sensing and license plate recognition, providing real-time alerts and spatial visualization for driver awareness.
+Key Features
 
-How it works:
+Dual camera support with Intel RealSense depth sensing
+Multi-engine OCR with fuzzy matching for accurate plate detection
+Real-time 3D position tracking and animated map display
+Configurable alert system with customizable detection tolerance
+Debug mode for hardware-independent testing
 
-Step 1: Capture real time footage from the front and back of the car using cameras and feed the video streams into the program
+Tech Stack
 
-Step 2: State of the art neural networks analyze the footage searching for license plates
-
-Step 3: If a license plate has been detected in the footage it is cropped out of the video, enchanced and processed using OCR tools and text matching algorithms to read the license plate text
-
-Step 4: The detected license plate text is compared to a database of known hidden police car license plates
-
-Step 5: If there is a match, the system pinpoints the car's location and places it on a map, relative to the vehicle they're currently driving
-
-Step 6: The system alerts and warns the user
+Python 3.x, OpenCV, YOLO v8
+Intel RealSense SDK, PyRealSense2
+Tesseract, EasyOCR, PaddleOCR
+CustomTkinter, PIL
+Threading, Queue
 
 ![image](https://github.com/user-attachments/assets/58adfdd0-d086-47b6-aa9d-d80fbb4bf345)
 
@@ -25,3 +27,4 @@ Step 6: The system alerts and warns the user
 
 ![image](https://github.com/user-attachments/assets/08971132-4fa2-4495-9ab6-14827e03bcc8)
 
+<img width="1281" height="747" alt="image" src="https://github.com/user-attachments/assets/a8e4e939-656b-421a-870c-55d35c7acc6e" />
