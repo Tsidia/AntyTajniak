@@ -13,7 +13,7 @@ A multi-camera computer vision application that detects and tracks police vehicl
 
 **Tech Stack**
 
-- Python 3.x, OpenCV, YOLO v8
+- Python 3, OpenCV, YOLO v8
 - Intel RealSense SDK, PyRealSense2
 - Tesseract, EasyOCR, PaddleOCR
 - CustomTkinter, PIL
